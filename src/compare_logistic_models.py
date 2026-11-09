@@ -6,7 +6,20 @@ import statsmodels.formula.api as smf
 from scipy.stats import chi2
 from scipy.special import expit
 from statsmodels.stats.outliers_influence import variance_inflation_factor
+import argparse
 
+from data_validation import (
+    validate_model_data,
+    verify_reference_counts,
+)
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--verify-reference",
+    action="store_true",
+    help="Проверить совпадение с исходной выборкой 2023 года",
+)
+args = parser.parse_args()
 
 query = """
 SELECT
@@ -40,6 +53,11 @@ with psycopg.connect("dbname=stackexchange_analytics") as conn:
         columns = [col.name for col in cur.description]
         df = pd.DataFrame(cur.fetchall(), columns=columns)
 
+validate_model_data(
+    df,
+    required_columns=[],
+    dataset_name="Исходная регрессионная выборка",
+)
 
 # Подготовка признаков
 df["answered_24h"] = df["answered_24h"].astype(int)
@@ -77,11 +95,19 @@ model_columns = [
     "hour_cos",
 ] + tag_columns
 
-assert len(df) == 5140
-assert df["user_id"].is_unique
-assert df["returned_30d"].sum() == 539
-assert df[model_columns].notna().all().all()
+validate_model_data(
+    df,
+    required_columns=model_columns,
+    dataset_name="Основная регрессионная выборка",
+)
 
+if args.verify_reference:
+    verify_reference_counts(
+        df,
+        expected_users=5140,
+        expected_returns=539,
+        expected_answers=2076,
+    )
 
 # Формулы моделей
 age_term = (
@@ -116,6 +142,12 @@ for name, formula in [
         formula,
         data=df,
     ).fit(disp=False, maxiter=200)
+
+# Проверяем, что все модели обучены на одной выборке
+if any(int(result.nobs) != len(df) for result in models.values()):
+    raise ValueError(
+        "Модели M0/M1/M2 обучены на разных выборках"
+    )
 
 # Экспорт результатов для визуализации
 results_dir = (
@@ -361,6 +393,11 @@ with psycopg.connect("dbname=stackexchange_analytics") as conn:
         columns = [col.name for col in cur.description]
         df_all = pd.DataFrame(cur.fetchall(), columns=columns)
 
+validate_model_data(
+    df_all,
+    required_columns=[],
+    dataset_name="Исходная полная выборка",
+)
 
 # Подготавливаем те же признаки, что в M2
 df_all["answered_24h"] = df_all["answered_24h"].astype(int)
@@ -376,17 +413,24 @@ df_all[tag_columns] = df_all[tag_columns].astype(int)
 
 
 # Проверяем полную выборку
-assert len(df_all) == 5240
-assert df_all["user_id"].is_unique
-assert df_all["returned_30d"].sum() == 550
-assert df_all["answered_24h"].sum() == 2119
-
-assert (
-    (df_all["account_age_group"] == "invalid").sum()
-    == 100
+validate_model_data(
+    df_all,
+    required_columns=model_columns,
+    dataset_name="Полная регрессионная выборка",
 )
 
-assert df_all[model_columns].notna().all().all()
+if args.verify_reference:
+    verify_reference_counts(
+        df_all,
+        expected_users=5240,
+        expected_returns=550,
+        expected_answers=2119,
+    )
+
+    if (df_all["account_age_group"] == "invalid").sum() != 100:
+        raise ValueError(
+            "Не совпало число аномальных дат регистрации"
+        )
 
 
 print("\n=== Анализ чувствительности ===")
@@ -437,7 +481,11 @@ threshold_df = df.merge(
     validate="one_to_one",
 )
 
-assert len(threshold_df) == 5140
+if len(threshold_df) != len(df):
+    raise ValueError(
+        "После объединения с ответами изменился "
+        "размер модельной выборки"
+    )
 
 hours_to_answer = (
     pd.to_datetime(threshold_df["first_answer_at"])

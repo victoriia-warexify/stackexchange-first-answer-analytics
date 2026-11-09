@@ -1,7 +1,25 @@
+import argparse
+
 import numpy as np
 import pandas as pd
 import psycopg
 import statsmodels.formula.api as smf
+
+from data_validation import (
+    validate_model_data,
+    verify_reference_counts,
+)
+
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument(
+    "--verify-reference",
+    action="store_true",
+    help="Проверить совпадение с исходной выборкой 2023 года",
+)
+
+args = parser.parse_args()
 
 
 query = """
@@ -46,12 +64,21 @@ df = pd.DataFrame(
     ],
 )
 
-# Проверки
-assert len(df) == 5140
-assert df["user_id"].is_unique
-assert df["returned_30d"].sum() == 539
-assert df["answered_24h"].sum() == 2076
-assert df.notna().all().all()
+# Проверка качества данных
+validate_model_data(
+    df,
+    required_columns=["account_age_group"],
+    dataset_name="M1: регрессионная выборка",
+)
+
+# Дополнительная сверка с историческими результатами
+if args.verify_reference:
+    verify_reference_counts(
+        df,
+        expected_users=5140,
+        expected_returns=539,
+        expected_answers=2076,
+    )
 
 print("Размер выборки:", len(df))
 
@@ -72,6 +99,11 @@ m1 = smf.logit(
     data=df,
 ).fit(disp=False)
 
+# Проверяем одинаковое количество наблюдений
+if int(m0.nobs) != len(df) or int(m1.nobs) != len(df):
+    raise ValueError(
+        "M0 и M1 обучены не на всей проверенной выборке"
+    )
 
 def print_main_result(name, result):
     coef = result.params["answered_24h"]
