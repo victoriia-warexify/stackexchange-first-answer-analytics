@@ -33,10 +33,6 @@ results["model"] = results["model"].map({
     "M2": "M2: Fully adjusted",
 })
 
-# Папка с графиками
-output_dir = Path("reports/figures")
-output_dir.mkdir(parents=True, exist_ok=True)
-
 # Позиции моделей на оси Y
 y = np.arange(len(results))
 
