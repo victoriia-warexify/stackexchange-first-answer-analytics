@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 
@@ -67,6 +68,79 @@ def validate_model_data(
                 f"{dataset_name}: отсутствует опорная "
                 "категория возраста under_one_day"
             )
+    
+    # Проверка конечности числовых значений
+    numeric_columns = [
+        col for col in columns
+        if pd.api.types.is_numeric_dtype(df[col])
+    ]
+
+    if numeric_columns:
+        numeric_values = df[numeric_columns].to_numpy(
+            dtype=float
+        )
+
+        if not np.isfinite(numeric_values).all():
+            raise ValueError(
+                f"{dataset_name}: обнаружены бесконечные "
+                "или некорректные числовые значения"
+            )
+
+    # Проверка допустимых диапазонов
+    numeric_ranges = {
+        "title_length": (1, None),
+        "tags_count": (0, None),
+        "question_hour": (0, 23),
+        "question_month": (1, 12),
+        "question_weekday": (1, 7),
+    }
+
+    integer_columns = {
+        "tags_count",
+        "question_hour",
+        "question_month",
+        "question_weekday",
+    }
+
+    for col, (minimum, maximum) in numeric_ranges.items():
+        if col not in df.columns:
+            continue
+
+        values = pd.to_numeric(df[col], errors="coerce")
+
+        if values.isna().any():
+            raise ValueError(
+                f"{dataset_name}: столбец {col} содержит "
+                "пропуски или нечисловые значения"
+            )
+
+        values = values.to_numpy(dtype=float)
+
+        if not np.isfinite(values).all():
+            raise ValueError(
+                f"{dataset_name}: столбец {col} содержит "
+                "NaN или бесконечные значения"
+            )
+
+        if (values < minimum).any():
+            raise ValueError(
+                f"{dataset_name}: значения {col} "
+                f"должны быть >= {minimum}"
+            )
+
+        if maximum is not None and (values > maximum).any():
+            raise ValueError(
+                f"{dataset_name}: значения {col} "
+                f"должны быть <= {maximum}"
+            )
+
+        if col in integer_columns:
+            if (values % 1 != 0).any():
+                raise ValueError(
+                    f"{dataset_name}: столбец {col} "
+                    "должен содержать целые числа"
+                )
+
 
 
 def verify_reference_counts(
