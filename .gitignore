@@ -20,3 +20,6 @@ __pycache__/
 /data/processed/
 
 .venv-lock-check/
+
+# Pytest
+.pytest_cache/

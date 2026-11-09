@@ -9,7 +9,9 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 import argparse
 
 from data_validation import (
+    TAG_COLUMNS,
     validate_model_data,
+    validate_raw_features,
     verify_reference_counts,
 )
 
@@ -21,81 +23,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-tag_columns = [
-    "has_regression",
-    "has_r",
-    "has_machine_learning",
-    "has_hypothesis_testing",
-    "has_time_series",
-    "has_probability",
-    "has_mathematical_statistics",
-    "has_mixed_model",
-    "has_statistical_significance",
-]
-
-raw_numeric_columns = [
-    "title_length",
-    "tags_count",
-    "question_month",
-    "question_weekday",
-    "question_hour",
-]
-
-raw_required_columns = [
-    "first_question_at",
-    "account_age_group",
-    *raw_numeric_columns,
-    *tag_columns,
-]
-
-def validate_raw_features(
-    data: pd.DataFrame,
-    dataset_name: str,
-) -> None:
-    """Проверка исходных признаков до преобразования типов."""
-
-    # Структура, пропуски, уникальность и бинарная цель
-    validate_model_data(
-        data,
-        required_columns=raw_required_columns,
-        dataset_name=dataset_name,
-    )
-
-    # Числовые признаки должны иметь числовые типы
-    for column in raw_numeric_columns:
-        if (
-            not pd.api.types.is_numeric_dtype(data[column])
-            or pd.api.types.is_bool_dtype(data[column])
-        ):
-            raise ValueError(
-                f"{dataset_name}: столбец {column} "
-                "должен иметь числовой тип"
-            )
-
-        values = data[column].to_numpy(dtype=float)
-
-        if not np.isfinite(values).all():
-            raise ValueError(
-                f"{dataset_name}: столбец {column} "
-                "содержит неконечные значения"
-            )
-
-    # Признаки тегов должны быть бинарными: 0 или 1
-    for column in tag_columns:
-        if not (
-            pd.api.types.is_integer_dtype(data[column])
-            or pd.api.types.is_bool_dtype(data[column])
-        ):
-            raise ValueError(
-                f"{dataset_name}: столбец {column} "
-                "должен содержать целые значения 0 или 1"
-            )
-
-        if not data[column].isin([0, 1]).all():
-            raise ValueError(
-                f"{dataset_name}: столбец {column} "
-                "содержит значения, отличные от 0 и 1"
-            )
+tag_columns = TAG_COLUMNS
 
 query = """
 SELECT
