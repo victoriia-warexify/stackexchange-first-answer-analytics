@@ -1,4 +1,3 @@
-
 SELECT
     COUNT(*) AS total_rows,
     COUNT(DISTINCT user_id) AS unique_users,

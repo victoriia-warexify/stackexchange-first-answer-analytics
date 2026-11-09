@@ -1,4 +1,3 @@
-
 SELECT
     YEAR(CreationDate) AS year,
     COUNT(*) AS questions_count,

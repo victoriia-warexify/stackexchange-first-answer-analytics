@@ -1,4 +1,3 @@
-
 WITH first_questions AS (
     SELECT
         OwnerUserId AS user_id,
