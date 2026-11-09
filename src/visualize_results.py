@@ -6,16 +6,31 @@ import numpy as np
 import pandas as pd
 
 
-# Результаты моделей на одной выборке (n = 5140)
-results = pd.DataFrame({
-    "model": [
-        "M0: Unadjusted",
-        "M1: Account age",
-        "M2: Fully adjusted",
-    ],
-    "or": [1.4411, 1.4886, 1.4704],
-    "ci_lower": [1.2050, 1.2421, 1.2239],
-    "ci_upper": [1.7236, 1.7840, 1.7664],
+
+ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = ROOT / "reports" / "data"
+output_dir = ROOT / "reports" / "figures"
+output_dir.mkdir(parents=True, exist_ok=True)
+
+# Результаты регрессий
+results = pd.read_csv(DATA_DIR / "model_results.csv")
+
+if set(results["model"]) != {"M0", "M1", "M2"}:
+    raise ValueError("Ожидались результаты M0, M1 и M2")
+
+if results["n"].nunique() != 1:
+    raise ValueError("Модели построены на разных выборках")
+
+results = (
+    results.set_index("model")
+    .loc[["M0", "M1", "M2"]]
+    .reset_index()
+)
+
+results["model"] = results["model"].map({
+    "M0": "M0: Unadjusted",
+    "M1": "M1: Account age",
+    "M2": "M2: Fully adjusted",
 })
 
 # Папка с графиками
@@ -97,15 +112,23 @@ plt.show()
 
 print(f"Saved: {output_path}")
 
+# Фактическая возвращаемость
+retention = pd.read_csv(
+    DATA_DIR / "retention_results.csv"
+)
 
-# Фактическая возвращаемость, полная когорта (n = 5240)
-retention = pd.DataFrame({
-    "group": [
-        "No answer within 24h",
-        "Answered within 24h",
-    ],
-    "users": [3121, 2119],
-    "returned": [284, 266],
+if set(retention["answered_24h"]) != {0, 1}:
+    raise ValueError("Ожидались две группы пользователей")
+
+retention = (
+    retention.set_index("answered_24h")
+    .loc[[0, 1]]
+    .reset_index()
+)
+
+retention["group"] = retention["answered_24h"].map({
+    0: "No answer within 24h",
+    1: "Answered within 24h",
 })
 
 retention["rate"] = (
@@ -162,7 +185,7 @@ difference_pp = (
 ax.text(
     0.5,
     0.95,
-    f"Observed difference: +{difference_pp:.2f} pp",
+    f"Observed difference: {difference_pp:+.2f} pp",
     transform=ax.transAxes,
     ha="center",
     va="top",
@@ -174,7 +197,8 @@ ax.set_ylabel("30-day return rate (%)")
 
 ax.set_title(
     "First Answer Matters?\n"
-    "Return outside the first thread (n = 5,240)"
+    f"Return outside the first thread "
+    f"(n = {retention['users'].sum():,})"
 )
 
 ax.grid(axis="y", alpha=0.2)
@@ -198,16 +222,19 @@ print(f"Saved: {output_path}")
 # Анализ чувствительности к порогу ответа
 # Скорректированные результаты M2 (n = 5140)
 
-thresholds = pd.DataFrame({
-    "threshold": [
-        "6 hours",
-        "12 hours",
-        "24 hours",
-    ],
-    "difference": [3.79, 3.86, 3.59],
-    "ci_lower": [1.88, 2.04, 1.85],
-    "ci_upper": [5.70, 5.67, 5.34],
-})
+# Результаты анализа чувствительности
+thresholds = pd.read_csv(
+    DATA_DIR / "threshold_results.csv"
+).sort_values("threshold_hours").reset_index(drop=True)
+
+thresholds["threshold"] = (
+    thresholds["threshold_hours"].astype(str)
+    + " hours"
+)
+
+thresholds["difference"] = thresholds["difference_pp"]
+thresholds["ci_lower"] = thresholds["ci_lower_pp"]
+thresholds["ci_upper"] = thresholds["ci_upper_pp"]
 
 y = np.arange(len(thresholds))
 

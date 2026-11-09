@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import psycopg
+from pathlib import Path
 import statsmodels.formula.api as smf
 from scipy.stats import chi2
 from scipy.special import expit
@@ -116,6 +117,32 @@ for name, formula in [
         data=df,
     ).fit(disp=False, maxiter=200)
 
+# Экспорт результатов для визуализации
+results_dir = (
+    Path(__file__).resolve().parents[1]
+    / "reports"
+    / "data"
+)
+results_dir.mkdir(parents=True, exist_ok=True)
+
+model_rows = []
+
+for name, result in models.items():
+    ci = result.conf_int().loc["answered_24h"]
+
+    model_rows.append({
+        "model": name,
+        "n": int(result.nobs),
+        "or": float(np.exp(result.params["answered_24h"])),
+        "ci_lower": float(np.exp(ci.iloc[0])),
+        "ci_upper": float(np.exp(ci.iloc[1])),
+        "p_value": float(result.pvalues["answered_24h"]),
+    })
+
+pd.DataFrame(model_rows).to_csv(
+    results_dir / "model_results.csv",
+    index=False,
+)
 
 # Сравнение основного коэффициента
 print(f"Пользователей: {len(df)}")
@@ -417,6 +444,8 @@ hours_to_answer = (
     - pd.to_datetime(threshold_df["first_question_at"])
 ).dt.total_seconds() / 3600.0
 
+threshold_rows = []
+
 for threshold in [6, 12, 24]:
     data = threshold_df.copy()
 
@@ -446,6 +475,15 @@ for threshold in [6, 12, 24]:
         adjusted_probability_difference(result)
     )
 
+    threshold_rows.append({
+        "threshold_hours": threshold,
+        "n": int(result.nobs),
+        "or": float(np.exp(coef)),
+        "difference_pp": float(100 * diff),
+        "ci_lower_pp": float(100 * low),
+        "ci_upper_pp": float(100 * high),
+    })
+
     print(f"\nПорог: {threshold} часов")
     print(f"Получили быстрый ответ: {data['answered_24h'].sum()}")
     print(f"OR: {np.exp(coef):.4f}")
@@ -460,3 +498,8 @@ for threshold in [6, 12, 24]:
         f"95% CI разницы: "
         f"[{100 * low:+.2f}; {100 * high:+.2f}] п.п."
     )
+
+pd.DataFrame(threshold_rows).to_csv(
+    results_dir / "threshold_results.csv",
+    index=False,
+)

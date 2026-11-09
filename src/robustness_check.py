@@ -1,4 +1,6 @@
 import psycopg
+from pathlib import Path
+import pandas as pd
 from statsmodels.stats.proportion import (
     proportions_ztest,
     confint_proportions_2indep,
@@ -71,6 +73,32 @@ def main():
 
     n1, original1, outside1 = groups[True]
     n0, original0, outside0 = groups[False]
+
+    # Экспорт фактической возвращаемости
+    results_dir = (
+        Path(__file__).resolve().parents[1]
+        / "reports"
+        / "data"
+    )
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    retention = pd.DataFrame([
+        {
+            "answered_24h": 0,
+            "users": n0,
+            "returned": outside0,
+        },
+        {
+            "answered_24h": 1,
+            "users": n1,
+            "returned": outside1,
+        },
+    ])
+
+    retention.to_csv(
+        results_dir / "retention_results.csv",
+        index=False,
+    )
 
     print("=== Исходная метрика ===")
     compare_proportions(original1, n1, original0, n0)
