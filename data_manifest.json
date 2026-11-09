@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "source": "Stack Exchange Data Explorer",
+  "site": "Cross Validated",
+  "manifest_generated_at_utc": "2026-11-09T23:37:02+00:00",
+  "files": [
+    {
+      "filename": "first_questions_2023.csv",
+      "path": "data/raw/first_questions_2023.csv",
+      "query": "sql/extraction/06_first_question_users_2023.sql",
+      "extracted_on": null,
+      "rows": 5240,
+      "size_bytes": 209581,
+      "sha256": "c1c0170e7ce5123b6edf59437b7b5e910c6e94829265d31f6f06e89976209d4c"
+    },
+    {
+      "filename": "answers_to_2023_questions.csv",
+      "path": "data/raw/answers_to_2023_questions.csv",
+      "query": "sql/extraction/07_answers_to_2023_questions.sql",
+      "extracted_on": null,
+      "rows": 8244,
+      "size_bytes": 397589,
+      "sha256": "8e344d715d456eefd4a7f259217fded2cdab825f929d91adb4e7490430d5657d"
+    },
+    {
+      "filename": "posts_activity_2023.csv",
+      "path": "data/raw/posts_activity_2023.csv",
+      "query": "sql/extraction/09_posts_activity_2023.sql",
+      "extracted_on": null,
+      "rows": 24317,
+      "size_bytes": 1060804,
+      "sha256": "f3e28675f3e331ddc4582208620779f54d9bba40830e424e1b878e9686ad6900"
+    },
+    {
+      "filename": "comments_2023_h1.csv",
+      "path": "data/raw/comments_2023_h1.csv",
+      "query": "sql/extraction/11_comments_activity_2023_h1.sql",
+      "extracted_on": null,
+      "rows": 29551,
+      "size_bytes": 1454816,
+      "sha256": "f8e56194500099b4f21bbfa630834c72e9fe1a7a9518c4790cb8cf9efe40bf8f"
+    },
+    {
+      "filename": "comments_2023_h2.csv",
+      "path": "data/raw/comments_2023_h2.csv",
+      "query": "sql/extraction/12_comments_activity_2023_h2.sql",
+      "extracted_on": null,
+      "rows": 24573,
+      "size_bytes": 1208031,
+      "sha256": "4ae7d27cc2435969b96c84eaeb673143166fd403e36a9ee02cda6c5edeefc443"
+    },
+    {
+      "filename": "comments_2024_jan.csv",
+      "path": "data/raw/comments_2024_jan.csv",
+      "query": "sql/extraction/13_comments_activity_2024_jan.sql",
+      "extracted_on": null,
+      "rows": 3775,
+      "size_bytes": 185468,
+      "sha256": "a93f9ba69268995514a970d522373c57541b2a182102b2c7ef10001d138944ca"
+    },
+    {
+      "filename": "user_registration_2023.csv",
+      "path": "data/raw/user_registration_2023.csv",
+      "query": "sql/extraction/14_user_registration_2023.sql",
+      "extracted_on": null,
+      "rows": 5240,
+      "size_bytes": 277702,
+      "sha256": "9e242b41a39e54ebc3fa55db8a5348954208e2274ccccc4969ae7e75afa7ebfe"
+    },
+    {
+      "filename": "initial_question_metadata_2023.csv",
+      "path": "data/raw/initial_question_metadata_2023.csv",
+      "query": "sql/extraction/15_initial_question_metadata_2023.sql",
+      "extracted_on": null,
+      "rows": 11979,
+      "size_bytes": 1615730,
+      "sha256": "44a98f46d774412d5f199893979e7be09d048725d7e1486802b416e5d192a6fb"
+    }
+  ]
+}
